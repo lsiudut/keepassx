@@ -20,6 +20,7 @@
 
 #include <QActionGroup>
 #include <QMainWindow>
+#include <QSystemTrayIcon>
 
 #include "core/SignalMultiplexer.h"
 #include "gui/DatabaseWidget.h"
@@ -41,6 +42,7 @@ public:
 public Q_SLOTS:
     void openDatabase(const QString& fileName, const QString& pw = QString(),
                       const QString& keyFile = QString());
+    void trayTriggered(QSystemTrayIcon::ActivationReason );
 
 protected:
      void closeEvent(QCloseEvent* event) Q_DECL_OVERRIDE;
@@ -61,6 +63,8 @@ private Q_SLOTS:
     void saveToolbarState(bool value);
     void rememberOpenDatabases(const QString& filePath);
     void applySettingsChanges();
+    void toggleHide();
+    void closeApp();
 
 private:
     static void setShortcut(QAction* action, QKeySequence::StandardKey standard, int fallback = 0);
@@ -77,6 +81,7 @@ private:
     QActionGroup* m_copyAdditionalAttributeActions;
     QStringList m_openDatabases;
     InactivityTimer* m_inactivityTimer;
+    QSystemTrayIcon* m_trayIcon;
 
     Q_DISABLE_COPY(MainWindow)
 };

@@ -72,6 +72,10 @@ MainWindow::MainWindow()
     m_inactivityTimer = new InactivityTimer(this);
     connect(m_inactivityTimer, SIGNAL(inactivityDetected()),
             m_ui->tabWidget, SLOT(lockDatabases()));
+
+    m_trayIcon = new QSystemTrayIcon(filePath()->icon("apps", "keepassx"), this);
+    connect(m_trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)), this, SLOT(trayTriggered(QSystemTrayIcon::ActivationReason)));
+
     applySettingsChanges();
 
     setShortcut(m_ui->actionDatabaseOpen, QKeySequence::Open, Qt::CTRL + Qt::Key_O);
@@ -164,7 +168,7 @@ MainWindow::MainWindow()
             SLOT(importKeePass1Database()));
     connect(m_ui->actionLockDatabases, SIGNAL(triggered()), m_ui->tabWidget,
             SLOT(lockDatabases()));
-    connect(m_ui->actionQuit, SIGNAL(triggered()), SLOT(close()));
+    connect(m_ui->actionQuit, SIGNAL(triggered()), this, SLOT(closeApp()));
 
     m_actionMultiplexer.connect(m_ui->actionEntryNew, SIGNAL(triggered()),
             SLOT(createEntry()));
@@ -258,6 +262,15 @@ void MainWindow::clearLastDatabases()
 void MainWindow::openDatabase(const QString& fileName, const QString& pw, const QString& keyFile)
 {
     m_ui->tabWidget->openDatabase(fileName, pw, keyFile);
+}
+
+
+void MainWindow::trayTriggered(QSystemTrayIcon::ActivationReason reason)
+{
+    if(reason != QSystemTrayIcon::DoubleClick)
+        return;
+
+    toggleHide();
 }
 
 void MainWindow::setMenuActionState(DatabaseWidget::Mode mode)
@@ -416,15 +429,21 @@ void MainWindow::databaseTabChanged(int tabIndex)
 
 void MainWindow::closeEvent(QCloseEvent* event)
 {
-    bool accept = saveLastDatabases();
-
-    if (accept) {
-        saveWindowInformation();
-
-        event->accept();
+    if(config()->get("MinimizeToTray").toBool() && this->isVisible()) {
+        this->hide();
+        event->ignore();
     }
     else {
-        event->ignore();
+        bool accept = saveLastDatabases();
+
+        if (accept) {
+            saveWindowInformation();
+
+            event->accept();
+        }
+        else {
+            event->ignore();
+        }
     }
 }
 
@@ -504,4 +523,27 @@ void MainWindow::applySettingsChanges()
     else {
         m_inactivityTimer->deactivate();
     }
+
+    if(config()->get("MinimizeToTray").toBool()) {
+        m_trayIcon->show();
+    }
+    else {
+        m_trayIcon->hide();
+    }
+}
+
+void MainWindow::toggleHide()
+{
+    if(this->isVisible()) {
+        this->hide();
+    }
+    else {
+        this->show();
+    }
+}
+
+void MainWindow::closeApp()
+{
+    this->hide();
+    close();
 }
