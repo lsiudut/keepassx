@@ -82,6 +82,7 @@ private:
     QStringList m_openDatabases;
     InactivityTimer* m_inactivityTimer;
     QSystemTrayIcon* m_trayIcon;
+    int m_countDefaultAttributes;
 
     Q_DISABLE_COPY(MainWindow)
 };

@@ -23,12 +23,14 @@
 #include "autotype/AutoTypePlatformPlugin.h"
 #include "autotype/AutoTypeSelectDialog.h"
 #include "autotype/WildcardMatcher.h"
+#include "core/Config.h"
 #include "core/Database.h"
 #include "core/Entry.h"
 #include "core/FilePath.h"
 #include "core/Group.h"
 #include "core/ListDeleter.h"
 #include "core/Tools.h"
+#include "gui/MessageBox.h"
 
 AutoType* AutoType::m_instance = Q_NULLPTR;
 
@@ -188,8 +190,12 @@ void AutoType::performGlobalAutoType(const QList<Database*>& dbList)
 
     if (entryList.isEmpty()) {
         m_inAutoType = false;
+        QString message = tr("Couldn't find an entry that matches the window title:");
+        message.append("\n\n");
+        message.append(windowTitle);
+        MessageBox::information(Q_NULLPTR, tr("Auto-Type - KeePassX"), message);
     }
-    else if (entryList.size() == 1) {
+    else if ((entryList.size() == 1) && !config()->get("security/autotypeask").toBool()) {
         m_inAutoType = false;
         performAutoType(entryList.first(), Q_NULLPTR, sequenceHash[entryList.first()]);
     }
@@ -497,6 +503,12 @@ QString AutoType::autoTypeSequence(const Entry* entry, const QString& windowTitl
                 match = true;
                 break;
             }
+        }
+
+        if (!match && config()->get("AutoTypeEntryTitleMatch").toBool() && !entry->title().isEmpty()
+                && windowTitle.contains(entry->title(), Qt::CaseInsensitive)) {
+            sequence = entry->defaultAutoTypeSequence();
+            match = true;
         }
 
         if (!match) {
